@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "474568556371",
+    "project_id": "translator-app-ec5df",
+    "storage_bucket": "translator-app-ec5df.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:474568556371:android:925cb8a00a6cd0e4c2eba6",
+        "android_client_info": {
+          "package_name": "com.ahmed.languagetranslation"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCClCYvMl67qNXYAUzBH1v9pKwqRRa4tHI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
