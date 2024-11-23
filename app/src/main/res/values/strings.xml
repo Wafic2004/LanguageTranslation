@@ -3,4 +3,6 @@
     <string name="multiline_text_from">FROM</string>
     <string name="convert_to">TO</string>
     <string name="multiline_text_to">TO</string>
+    <string name="to_enable_mic">To enable mic</string>
+    <string name="downloadlanguageshere">DownloadLanguages</string>
 </resources>

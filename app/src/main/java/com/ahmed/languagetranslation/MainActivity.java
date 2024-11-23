@@ -1,19 +1,25 @@
 package com.ahmed.languagetranslation;
 
+import android.content.ClipData;
+import android.content.Intent;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.tasks.OnFailureListener;
@@ -30,6 +36,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
@@ -39,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     EditText multilineTextTo;
     Spinner fromLangSpinner;
     Spinner toLangSpinner;
+    ImageButton micButton;
 
     //Variables for Translator
     Translator translator;
@@ -67,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
         multilineTextTo = findViewById(R.id.editTextTextMultiLine2);
         fromLangSpinner = findViewById(R.id.fromSpinner);
         toLangSpinner = findViewById(R.id.toSpinner);
+        micButton = findViewById(R.id.imageButton);
         Log.d(activityTest, "UI Variables are ready");
 
         //Calling the settingAllLanguage function to set all languages
@@ -136,6 +145,28 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        micButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
+                startActivity(recognizerIntent);
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == RESULT_OK && data != null) {
+            ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if(result != null) {
+                multilineTextFrom.setText(result.get(0));
+            }
+        }
     }
 
     void settingAllLanguages() {
@@ -180,8 +211,9 @@ public class MainActivity extends AppCompatActivity {
     //On menu Created, we set the not downloaded languages in the menu
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        int keyIndex = 0;
-        //settingSpinners();
+        menu.clear();
+        menu.add(0,0,0,"DownloadLanguages");
+        int keyIndex = 1;
         for(int i = 0; i<notDownloadedLanguageNameAndCode.size(); i++){
             menu.add(0, keyIndex, 0, notDownloadedLanguageNameAndCode.get(i).languageName);
             keyIndex++;
@@ -192,32 +224,34 @@ public class MainActivity extends AppCompatActivity {
     //On options selected, we get the language and download it
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        String languageCode = notDownloadedLanguageCodes.get(item.getItemId());
-        String languageName = new Locale(languageCode).getDisplayName();
+        if(item.getItemId() > 0) {
+            String languageCode = notDownloadedLanguageCodes.get(item.getItemId() - 1);
+            String languageName = new Locale(languageCode).getDisplayName();
 
-        //To download the selected Language and to update the menu and spinner
-        translatorOptions = new TranslatorOptions.Builder()
-                .setSourceLanguage(TranslateLanguage.ENGLISH)
-                .setTargetLanguage(languageCode)
-                .build();
-        translator = Translation.getClient(translatorOptions);
-        downloadConditions = new DownloadConditions.Builder()
-                .requireWifi()
-                .build();
-        translator.downloadModelIfNeeded(downloadConditions)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void unused) {
-                        //Toast.makeText(this, "DownloadComplete", Toast.LENGTH_SHORT).show();
-                        Log.d(activityTest, "DownloadCompleted");
-                        DownloadedLanguageCodeSeparation downloadedLanguageCodeSeparation = new DownloadedLanguageCodeSeparation(languageCode, languageName);
-                        downloadedLanguageNameAndCode.add(downloadedLanguageCodeSeparation);
-                        notDownloadedLanguageCodes.remove(item.getItemId());
-                        notDownloadedLanguageNameAndCode.remove(item.getItemId());
-                        invalidateOptionsMenu();
-                        settingSpinners();
-                    }
-                });
+            //To download the selected Language and to update the menu and spinner
+            translatorOptions = new TranslatorOptions.Builder()
+                    .setSourceLanguage(TranslateLanguage.ENGLISH)
+                    .setTargetLanguage(languageCode)
+                    .build();
+            translator = Translation.getClient(translatorOptions);
+            downloadConditions = new DownloadConditions.Builder()
+                    .requireWifi()
+                    .build();
+            translator.downloadModelIfNeeded(downloadConditions)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            //Toast.makeText(this, "DownloadComplete", Toast.LENGTH_SHORT).show();
+                            Log.d(activityTest, "DownloadCompleted");
+                            DownloadedLanguageCodeSeparation downloadedLanguageCodeSeparation = new DownloadedLanguageCodeSeparation(languageCode, languageName);
+                            downloadedLanguageNameAndCode.add(downloadedLanguageCodeSeparation);
+                            notDownloadedLanguageCodes.remove(item.getItemId() - 1);
+                            notDownloadedLanguageNameAndCode.remove(item.getItemId() - 1);
+                            invalidateOptionsMenu();
+                            settingSpinners();
+                        }
+                    });
+        }
         return super.onOptionsItemSelected(item);
     }
 

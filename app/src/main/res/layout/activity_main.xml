@@ -7,6 +7,19 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <ImageButton
+        android:id="@+id/imageButton"
+        android:layout_width="65dp"
+        android:layout_height="65dp"
+        android:background="@color/white"
+        android:layout_marginTop="270dp"
+        android:contentDescription="@string/to_enable_mic"
+        android:src="@drawable/baseline_mic_24"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/editTextTextMultiLine2" />
+
     <Spinner
         android:id="@+id/fromSpinner"
         android:layout_width="0dp"
@@ -54,8 +67,10 @@
         android:inputType="textMultiLine"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/convert_btn" />
+        app:layout_constraintTop_toBottomOf="@+id/convert_btn"
+        app:layout_constraintVertical_bias="1.0" />
 
     <Button
         android:id="@+id/convert_btn"
