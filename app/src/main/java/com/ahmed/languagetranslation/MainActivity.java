@@ -1,25 +1,24 @@
 package com.ahmed.languagetranslation;
 
-import android.content.ClipData;
 import android.content.Intent;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.tasks.OnFailureListener;
@@ -36,7 +35,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
@@ -46,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
     EditText multilineTextTo;
     Spinner fromLangSpinner;
     Spinner toLangSpinner;
-    ImageButton micButton;
+    Button speechToTextButton;
 
     //Variables for Translator
     Translator translator;
@@ -75,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
         multilineTextTo = findViewById(R.id.editTextTextMultiLine2);
         fromLangSpinner = findViewById(R.id.fromSpinner);
         toLangSpinner = findViewById(R.id.toSpinner);
-        micButton = findViewById(R.id.imageButton);
+        speechToTextButton = findViewById(R.id.button);
         Log.d(activityTest, "UI Variables are ready");
 
         //Calling the settingAllLanguage function to set all languages
@@ -145,29 +143,46 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
-        micButton.setOnClickListener(new View.OnClickListener() {
+        //button to turn on mic system
+        speechToTextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.d("TestLog", "Getting in");
                 Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
                 recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
                 recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
-                startActivity(recognizerIntent);
+                //startActivity(recognizerIntent);
+                startSpeechToText.launch(recognizerIntent);
             }
         });
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == RESULT_OK && data != null) {
-            ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-            if(result != null) {
-                multilineTextFrom.setText(result.get(0));
+    ActivityResultLauncher<Intent> startSpeechToText = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+        @Override
+        public void onActivityResult(ActivityResult result) {
+            Log.d("Speech", "Enters the Result");
+            if (result != null && result.getResultCode() == RESULT_OK) {
+                if (result.getData() != null) {
+                    Bundle bundle = result.getData().getExtras();
+                    ArrayList<String> speechText = bundle.getStringArrayList(RecognizerIntent.EXTRA_RESULTS);
+                    //Log.d("Speech", speechText.isEmpty());
+                    String txt_in_editText = multilineTextFrom.getText().toString();
+                    if(speechText != null && !speechText.isEmpty()) {
+                        if(!txt_in_editText.endsWith(" ")) {
+                            String txtSeq = txt_in_editText + " " + speechText.get(0).toString();
+                            multilineTextFrom.setText(txtSeq);
+                        } else if (txt_in_editText.endsWith(" ")) {
+                            String txtSeq = txt_in_editText + speechText.get(0).toString();
+                            multilineTextFrom.setText(txtSeq);
+                        }
+                        Log.d("Speech", "Does worked");
+                    } else {
+                        Log.d("Speech", "Doesn't worked");
+                    }
+                }
             }
         }
-    }
+    });
 
     void settingAllLanguages() {
         notDownloadedLanguageNameAndCode = new ArrayList<>();
@@ -212,6 +227,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.clear();
+//        MenuInflater inflater = new MenuInflater(this);
+//        inflater.inflate(R.menu.home_menu, menu);
         menu.add(0,0,0,"DownloadLanguages");
         int keyIndex = 1;
         for(int i = 0; i<notDownloadedLanguageNameAndCode.size(); i++){
