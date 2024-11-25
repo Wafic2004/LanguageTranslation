@@ -36,6 +36,7 @@
         android:gravity="start|top"
         android:hint="@string/multiline_text_from"
         android:inputType="textMultiLine"
+        android:background="@color/white"
         android:textSize="20sp"
         app:layout_constraintBottom_toTopOf="@+id/convert_btn"
         app:layout_constraintEnd_toEndOf="parent"
@@ -52,6 +53,9 @@
         android:gravity="start|top"
         android:hint="@string/multiline_text_to"
         android:inputType="textMultiLine"
+        android:background="@color/white"
+        android:focusable="false"
+        android:textIsSelectable="true"
         android:padding="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -75,13 +79,32 @@
         app:layout_constraintStart_toEndOf="@+id/fromSpinner"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="TURN ON MIC"
+    <ImageButton
+        android:id="@+id/micButton"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@color/white"
         app:layout_constraintBottom_toBottomOf="@+id/editTextTextMultiLine"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@android:drawable/ic_btn_speak_now" />
+
+    <ImageButton
+        android:id="@+id/clearButton"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@color/white"
+        app:layout_constraintBottom_toTopOf="@+id/fromSpinner"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@android:drawable/btn_dialog" />
+
+    <ImageButton
+        android:id="@+id/copyButton"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        app:layout_constraintBottom_toTopOf="@+id/toSpinner"
+        android:background="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@android:drawable/ic_input_get" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

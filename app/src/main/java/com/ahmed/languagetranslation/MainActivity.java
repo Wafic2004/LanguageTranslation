@@ -1,5 +1,7 @@
 package com.ahmed.languagetranslation;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
@@ -10,6 +12,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -44,7 +47,9 @@ public class MainActivity extends AppCompatActivity {
     EditText multilineTextTo;
     Spinner fromLangSpinner;
     Spinner toLangSpinner;
-    Button speechToTextButton;
+    ImageButton speechToTextButton;
+    ImageButton clearButton;
+    ImageButton copyButton;
 
     //Variables for Translator
     Translator translator;
@@ -73,7 +78,9 @@ public class MainActivity extends AppCompatActivity {
         multilineTextTo = findViewById(R.id.editTextTextMultiLine2);
         fromLangSpinner = findViewById(R.id.fromSpinner);
         toLangSpinner = findViewById(R.id.toSpinner);
-        speechToTextButton = findViewById(R.id.button);
+        speechToTextButton = findViewById(R.id.micButton);
+        clearButton = findViewById(R.id.clearButton);
+        copyButton = findViewById(R.id.copyButton);
         Log.d(activityTest, "UI Variables are ready");
 
         //Calling the settingAllLanguage function to set all languages
@@ -155,6 +162,23 @@ public class MainActivity extends AppCompatActivity {
                 startSpeechToText.launch(recognizerIntent);
             }
         });
+        //button to clear text
+        clearButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                multilineTextFrom.getText().clear();
+            }
+        });
+        //button to copy the converted text to clipboard
+        copyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("Converted Sentence", multilineTextTo.getText());
+                clipboardManager.setPrimaryClip(clip);
+                Toast.makeText(MainActivity.this, "Copied to clipboard", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     ActivityResultLauncher<Intent> startSpeechToText = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
@@ -180,6 +204,59 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("Speech", "Doesn't worked");
                     }
                 }
+            }
+
+            if(!downloadedLanguageNameAndCode.isEmpty()) {
+                //Variable to get the codes of all languages using LanguageCodeSeparation
+                List<String> languageCode = new ArrayList<>();
+                for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                    languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                }
+
+                //Setting the Translator
+                int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
+                translatorOptions = new TranslatorOptions.Builder()
+                        .setSourceLanguage(languageCode.get(fls_SelectedPosition))
+                        .setTargetLanguage(languageCode.get(tls_SelectedPosition))
+                        .build();
+                translator = Translation.getClient(translatorOptions);
+                downloadConditions = new DownloadConditions.Builder()
+                        .requireWifi()
+                        .build();
+
+                //To translate the text
+                translator.downloadModelIfNeeded(downloadConditions)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void unused) {
+                                //Toast.makeText(this, "Download for languages are completed", Toast.LENGTH_SHORT).show();
+                                if (multilineTextFrom.getText().toString().isEmpty()) {
+                                    //no text
+                                    Toast.makeText(getBaseContext(), "Please Enter Text in From TextEdit", Toast.LENGTH_SHORT).show();
+                                } else {
+                                    translator.translate(String.valueOf(multilineTextFrom.getText()))
+                                            .addOnSuccessListener(new OnSuccessListener<String>() {
+                                                @Override
+                                                public void onSuccess(String s) {
+                                                    multilineTextTo.setText(s);
+                                                }
+                                            })
+                                            .addOnFailureListener(new OnFailureListener() {
+                                                @Override
+                                                public void onFailure(@NonNull Exception e) {
+
+                                                }
+                                            });
+                                }
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+
+                            }
+                        });
             }
         }
     });
@@ -251,14 +328,14 @@ public class MainActivity extends AppCompatActivity {
                     .setTargetLanguage(languageCode)
                     .build();
             translator = Translation.getClient(translatorOptions);
-            downloadConditions = new DownloadConditions.Builder()
-                    .requireWifi()
-                    .build();
-            translator.downloadModelIfNeeded(downloadConditions)
+//            downloadConditions = new DownloadConditions.Builder()
+//                    .requireWifi()
+//                    .build();
+            translator.downloadModelIfNeeded()
                     .addOnSuccessListener(new OnSuccessListener<Void>() {
                         @Override
                         public void onSuccess(Void unused) {
-                            //Toast.makeText(this, "DownloadComplete", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, "Downloading the Language", Toast.LENGTH_SHORT).show();
                             Log.d(activityTest, "DownloadCompleted");
                             DownloadedLanguageCodeSeparation downloadedLanguageCodeSeparation = new DownloadedLanguageCodeSeparation(languageCode, languageName);
                             downloadedLanguageNameAndCode.add(downloadedLanguageCodeSeparation);
