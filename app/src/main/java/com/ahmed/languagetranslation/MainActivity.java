@@ -2,8 +2,11 @@ package com.ahmed.languagetranslation;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.Menu;
@@ -11,6 +14,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Spinner;
@@ -34,10 +39,17 @@ import com.google.mlkit.nl.translate.Translation;
 import com.google.mlkit.nl.translate.Translator;
 import com.google.mlkit.nl.translate.TranslatorOptions;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
@@ -50,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
     ImageButton speechToTextButton;
     ImageButton clearButton;
     ImageButton copyButton;
+    CheckBox conversationModeCheckBox;
+    Button conversationLogButton;
 
     //Variables for Translator
     Translator translator;
@@ -64,6 +78,20 @@ public class MainActivity extends AppCompatActivity {
 
     //Log tags
     final String activityTest = "ActivityTest";
+
+    //Global variables
+    int conversationStage = 0;
+    boolean conversationModeSwitchCheck = false;
+    //Global variables for Conversation mode
+    String firstTranslationFrom;
+    String firstTranslationTo;
+    String secondTranslationFrom;
+    String secondTranslationTo;
+    String fromLanguage;
+    String toLanguage;
+    SharedPreferences sharedPreferences;
+    String nameOfSharedPref = "LanguageTranslationConversation";
+    int keyIncrement = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,12 +109,17 @@ public class MainActivity extends AppCompatActivity {
         speechToTextButton = findViewById(R.id.micButton);
         clearButton = findViewById(R.id.clearButton);
         copyButton = findViewById(R.id.copyButton);
+        conversationModeCheckBox = findViewById(R.id.conversationModeCheckBox);
+        conversationLogButton = findViewById(R.id.conversationLogButton);
+        conversationLogButton.setVisibility(View.GONE);
         Log.d(activityTest, "UI Variables are ready");
 
         //Calling the settingAllLanguage function to set all languages
         settingAllLanguages();
         Log.d(activityTest, "Setting All Languages");
 
+        //created a SharedPreference to store the language translation history
+        sharedPreferences = getSharedPreferences(nameOfSharedPref, Context.MODE_PRIVATE);
     }
 
     @Override
@@ -96,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         convert_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!downloadedLanguageNameAndCode.isEmpty()) {
+                if(!downloadedLanguageNameAndCode.isEmpty() && !conversationModeCheckBox.isChecked()) {
                     //Variable to get the codes of all languages using LanguageCodeSeparation
                     List<String> languageCode = new ArrayList<>();
                     for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
@@ -106,47 +139,245 @@ public class MainActivity extends AppCompatActivity {
                     //Setting the Translator
                     int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
                     int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
-                    translatorOptions = new TranslatorOptions.Builder()
-                            .setSourceLanguage(languageCode.get(fls_SelectedPosition))
-                            .setTargetLanguage(languageCode.get(tls_SelectedPosition))
-                            .build();
-                    translator = Translation.getClient(translatorOptions);
-                    downloadConditions = new DownloadConditions.Builder()
-                            .requireWifi()
-                            .build();
+                    if(!Objects.equals(languageCode.get(fls_SelectedPosition), languageCode.get(tls_SelectedPosition))) {
+                        translatorOptions = new TranslatorOptions.Builder()
+                                .setSourceLanguage(languageCode.get(fls_SelectedPosition))
+                                .setTargetLanguage(languageCode.get(tls_SelectedPosition))
+                                .build();
+                        translator = Translation.getClient(translatorOptions);
+                        downloadConditions = new DownloadConditions.Builder()
+                                .requireWifi()
+                                .build();
 
-                    //To translate the text
-                    translator.downloadModelIfNeeded(downloadConditions)
-                            .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                @Override
-                                public void onSuccess(Void unused) {
-                                    //Toast.makeText(this, "Download for languages are completed", Toast.LENGTH_SHORT).show();
-                                    if (multilineTextFrom.getText().toString().isEmpty()) {
-                                        //no text
-                                        Toast.makeText(getBaseContext(), "Please Enter Text in From TextEdit", Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        translator.translate(String.valueOf(multilineTextFrom.getText()))
-                                                .addOnSuccessListener(new OnSuccessListener<String>() {
-                                                    @Override
-                                                    public void onSuccess(String s) {
-                                                        multilineTextTo.setText(s);
-                                                    }
-                                                })
-                                                .addOnFailureListener(new OnFailureListener() {
-                                                    @Override
-                                                    public void onFailure(@NonNull Exception e) {
+                        //To translate the text
+                        translator.downloadModelIfNeeded(downloadConditions)
+                                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void unused) {
+                                        //Toast.makeText(this, "Download for languages are completed", Toast.LENGTH_SHORT).show();
+                                        if (multilineTextFrom.getText().toString().isEmpty()) {
+                                            //no text
+                                            Toast.makeText(getBaseContext(), "Please Enter Text in From TextEdit", Toast.LENGTH_SHORT).show();
+                                        } else {
+                                            translator.translate(String.valueOf(multilineTextFrom.getText()))
+                                                    .addOnSuccessListener(new OnSuccessListener<String>() {
+                                                        @Override
+                                                        public void onSuccess(String s) {
+                                                            multilineTextTo.setText(s);
+                                                        }
+                                                    })
+                                                    .addOnFailureListener(new OnFailureListener() {
+                                                        @Override
+                                                        public void onFailure(@NonNull Exception e) {
 
-                                                    }
-                                                });
+                                                        }
+                                                    });
+                                        }
                                     }
-                                }
-                            })
-                            .addOnFailureListener(new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception e) {
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
 
-                                }
-                            });
+                                    }
+                                });
+                    } else {
+                        Toast.makeText(MainActivity.this, "Please select different language to translate", Toast.LENGTH_SHORT).show();
+                    }
+                } else if (!downloadedLanguageNameAndCode.isEmpty() && conversationModeCheckBox.isChecked()) {
+                    if(!conversationModeSwitchCheck && fromLanguage == null && toLanguage == null) {
+                        conversationModeSwitchCheck = true;
+
+                        //Variable to get the codes of all languages using LanguageCodeSeparation
+                        List<String> languageCode = new ArrayList<>();
+                        for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                            languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                        }
+
+                        //Setting the Translator
+                        int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                        int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
+
+                        if(!Objects.equals(languageCode.get(fls_SelectedPosition), languageCode.get(tls_SelectedPosition))) {
+                            fromLanguage = languageCode.get(fls_SelectedPosition);
+                            toLanguage = languageCode.get(tls_SelectedPosition);
+
+                            translatorOptions = new TranslatorOptions.Builder()
+                                    .setSourceLanguage(languageCode.get(fls_SelectedPosition))
+                                    .setTargetLanguage(languageCode.get(tls_SelectedPosition))
+                                    .build();
+                            translator = Translation.getClient(translatorOptions);
+                            downloadConditions = new DownloadConditions.Builder()
+                                    .requireWifi()
+                                    .build();
+
+                            //To translate the text
+                            translator.downloadModelIfNeeded(downloadConditions)
+                                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                        @Override
+                                        public void onSuccess(Void unused) {
+                                            //Toast.makeText(this, "Download for languages are completed", Toast.LENGTH_SHORT).show();
+                                            if (multilineTextFrom.getText().toString().isEmpty()) {
+                                                //no text
+                                                Toast.makeText(getBaseContext(), "Please Enter Text in From TextEdit", Toast.LENGTH_SHORT).show();
+                                            } else {
+                                                translator.translate(String.valueOf(multilineTextFrom.getText()))
+                                                        .addOnSuccessListener(new OnSuccessListener<String>() {
+                                                            @Override
+                                                            public void onSuccess(String s) {
+                                                                multilineTextTo.setText(s);
+                                                                //storing the language used to check the swap
+                                                                firstTranslationFrom = String.valueOf(multilineTextFrom.getText());
+                                                                firstTranslationTo = String.valueOf(multilineTextTo.getText());
+                                                                Toast.makeText(MainActivity.this, "your conversation is finished", Toast.LENGTH_SHORT).show();
+                                                            }
+                                                        })
+                                                        .addOnFailureListener(new OnFailureListener() {
+                                                            @Override
+                                                            public void onFailure(@NonNull Exception e) {
+
+                                                            }
+                                                        });
+                                            }
+                                        }
+                                    })
+                                    .addOnFailureListener(new OnFailureListener() {
+                                        @Override
+                                        public void onFailure(@NonNull Exception e) {
+
+                                        }
+                                    });
+                        } else {
+                            Toast.makeText(MainActivity.this, "Please select different language to translate", Toast.LENGTH_SHORT).show();
+                        }
+                    } else if (conversationModeSwitchCheck && fromLanguage != null && toLanguage != null) {
+                        //Variable to get the codes of all languages using LanguageCodeSeparation
+                        List<String> languageCode = new ArrayList<>();
+                        for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                            languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                        }
+
+                        //Setting the Translator
+                        int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                        int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
+
+                        if(Objects.equals(fromLanguage, languageCode.get(tls_SelectedPosition)) && Objects.equals(toLanguage, languageCode.get(fls_SelectedPosition))) {
+                            conversationModeSwitchCheck = false;
+                            translatorOptions = new TranslatorOptions.Builder()
+                                    .setSourceLanguage(languageCode.get(fls_SelectedPosition))
+                                    .setTargetLanguage(languageCode.get(tls_SelectedPosition))
+                                    .build();
+                            translator = Translation.getClient(translatorOptions);
+                            downloadConditions = new DownloadConditions.Builder()
+                                    .requireWifi()
+                                    .build();
+
+                            //To translate the text
+                            translator.downloadModelIfNeeded(downloadConditions)
+                                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                        @Override
+                                        public void onSuccess(Void unused) {
+                                            //Toast.makeText(this, "Download for languages are completed", Toast.LENGTH_SHORT).show();
+                                            if (multilineTextFrom.getText().toString().isEmpty()) {
+                                                //no text
+                                                Toast.makeText(getBaseContext(), "Please Enter Text in From TextEdit", Toast.LENGTH_SHORT).show();
+                                            } else {
+                                                translator.translate(String.valueOf(multilineTextFrom.getText()))
+                                                        .addOnSuccessListener(new OnSuccessListener<String>() {
+                                                            @Override
+                                                            public void onSuccess(String s) {
+                                                                multilineTextTo.setText(s);
+                                                                //Shared Preference's Data added here
+                                                                secondTranslationFrom = String.valueOf(multilineTextFrom.getText());
+                                                                secondTranslationTo = String.valueOf(multilineTextTo.getText());
+                                                                Set<String> sp_StringSet = new LinkedHashSet<String>();
+                                                                sp_StringSet.add(fromLanguage);
+                                                                sp_StringSet.add(toLanguage);
+                                                                sp_StringSet.add(firstTranslationFrom);
+                                                                sp_StringSet.add(firstTranslationTo);
+                                                                sp_StringSet.add(secondTranslationFrom);
+                                                                sp_StringSet.add(secondTranslationTo);
+                                                                //adding the shared preference to the JSONArray so it won't be unordered
+                                                                JSONArray jsonArray = new JSONArray(sp_StringSet);
+                                                                Log.d("TestLog", sp_StringSet.toString());
+                                                                SharedPreferences.Editor editor = sharedPreferences.edit();
+                                                                //Entry path will be checked here
+                                                                Map<String, ?> checkPath = sharedPreferences.getAll();
+                                                                if(checkPath.isEmpty()) {
+                                                                    Log.d("TestLog", "Enters on null sharedPref");
+                                                                    editor.putString(String.valueOf(keyIncrement), jsonArray.toString());
+                                                                    editor.apply();
+                                                                    keyIncrement++; //just in case
+                                                                } else {
+                                                                    Log.d("TestLog", "Enters on not null sharedPref");
+                                                                    keyIncrement = 0;
+                                                                    //Getting every data with keys from shared preference
+                                                                    Map<String, ?> keyCollection = sharedPreferences.getAll();
+                                                                    for (Map.Entry<String, ?> keys : keyCollection.entrySet()){
+                                                                        JSONArray showDataTest;
+                                                                        try {
+                                                                            showDataTest = new JSONArray(sharedPreferences.getString(keys.getKey(), "[]"));
+                                                                        } catch (JSONException e) {
+                                                                            throw new RuntimeException(e);
+                                                                        }
+                                                                        //Checking weather it is ordered correctly
+                                                                        for (int i = 0; i < showDataTest.length(); i++) {
+                                                                            try {
+                                                                                Log.d("TestLog", showDataTest.getString(i));
+                                                                            } catch (JSONException e) {
+                                                                                throw new RuntimeException(e);
+                                                                            }
+                                                                        }
+                                                                        keyIncrement++;
+                                                                    }
+                                                                    editor.putString(String.valueOf(keyIncrement), jsonArray.toString());
+                                                                    editor.apply();
+                                                                    keyIncrement++; //just in case
+                                                                }
+                                                                fromLanguage = null;
+                                                                toLanguage = null;
+                                                                Toast.makeText(MainActivity.this, "Finished the conversation, stored in conversation log", Toast.LENGTH_SHORT).show();
+                                                            }
+                                                        })
+                                                        .addOnFailureListener(new OnFailureListener() {
+                                                            @Override
+                                                            public void onFailure(@NonNull Exception e) {
+
+                                                            }
+                                                        });
+                                            }
+                                        }
+                                    })
+                                    .addOnFailureListener(new OnFailureListener() {
+                                        @Override
+                                        public void onFailure(@NonNull Exception e) {
+
+                                        }
+                                    });
+                        } else {
+                            Toast.makeText(MainActivity.this, "Please change the from language to, to language and to language to, from language", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+            }
+        });
+        //Conversation Mode Toggled or not
+        conversationModeCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                boolean isCheckedMode;
+                if(buttonView.getId() == R.id.conversationModeCheckBox) {
+                    isCheckedMode = buttonView.isChecked();
+                    if(isCheckedMode) {
+                        Toast.makeText(MainActivity.this, "Conversation Mode On", Toast.LENGTH_SHORT).show();
+                        conversationLogButton.setVisibility(View.VISIBLE);
+                    } else if(!isCheckedMode && !conversationModeSwitchCheck){
+                        Toast.makeText(MainActivity.this, "Conversation Mode Off", Toast.LENGTH_SHORT).show();
+                        conversationLogButton.setVisibility(View.GONE);
+                    } else if(!isCheckedMode && conversationModeSwitchCheck) {
+                        conversationModeCheckBox.setChecked(true);
+                        Toast.makeText(MainActivity.this, "Please finish the conversation", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });
@@ -179,8 +410,21 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "Copied to clipboard", Toast.LENGTH_SHORT).show();
             }
         });
+        //button to go to the conversation log activity
+        conversationLogButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        startActivity(new Intent(MainActivity.this, ConversationActivity.class));
+                        finish();
+                    }
+                }, 150);
+            }
+        });
     }
-
+    //Speech activity on result
     ActivityResultLauncher<Intent> startSpeechToText = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
         @Override
         public void onActivityResult(ActivityResult result) {
@@ -335,7 +579,7 @@ public class MainActivity extends AppCompatActivity {
                     .addOnSuccessListener(new OnSuccessListener<Void>() {
                         @Override
                         public void onSuccess(Void unused) {
-                            Toast.makeText(MainActivity.this, "Downloading the Language", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, "Downloaded the Language", Toast.LENGTH_SHORT).show();
                             Log.d(activityTest, "DownloadCompleted");
                             DownloadedLanguageCodeSeparation downloadedLanguageCodeSeparation = new DownloadedLanguageCodeSeparation(languageCode, languageName);
                             downloadedLanguageNameAndCode.add(downloadedLanguageCodeSeparation);
