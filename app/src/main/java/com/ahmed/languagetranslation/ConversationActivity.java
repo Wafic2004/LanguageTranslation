@@ -95,18 +95,6 @@ public class ConversationActivity extends AppCompatActivity {
         });
     }
 
-//    @Override
-//    protected void onPause() {
-//        super.onPause();
-//            new Handler().postDelayed(new Runnable() {
-//                @Override
-//                public void run() {
-//                    startActivity(new Intent(ConversationActivity.this, MainActivity.class));
-//                    finish();
-//                }
-//            }, 150);
-//    }
-
     void settingTheRecyclerList() {
         listOfConversationObject = new ArrayList<>();
         Map<String, ?> keyCollection = sharedPreferences.getAll();

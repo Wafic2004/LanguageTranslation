@@ -80,11 +80,22 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageButton
-        android:id="@+id/micButton"
+        android:id="@+id/micFromButton"
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:background="@color/white"
         app:layout_constraintBottom_toBottomOf="@+id/editTextTextMultiLine"
+        app:layout_constraintEnd_toStartOf="@+id/copyButton"
+        app:layout_constraintStart_toEndOf="@+id/clearButton"
+        app:srcCompat="@android:drawable/ic_btn_speak_now" />
+
+    <ImageButton
+        android:id="@+id/micToButton"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="50dp"
+        android:background="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@android:drawable/ic_btn_speak_now" />

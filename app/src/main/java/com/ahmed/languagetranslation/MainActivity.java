@@ -43,7 +43,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -59,7 +58,8 @@ public class MainActivity extends AppCompatActivity {
     EditText multilineTextTo;
     Spinner fromLangSpinner;
     Spinner toLangSpinner;
-    ImageButton speechToTextButton;
+    ImageButton speechToTextFromButton;
+    ImageButton speechToTextToButton;
     ImageButton clearButton;
     ImageButton copyButton;
     CheckBox conversationModeCheckBox;
@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
     final String activityTest = "ActivityTest";
 
     //Global variables
-    int conversationStage = 0;
+    int micSwitch = 0;
     boolean conversationModeSwitchCheck = false;
     //Global variables for Conversation mode
     String firstTranslationFrom;
@@ -106,7 +106,8 @@ public class MainActivity extends AppCompatActivity {
         multilineTextTo = findViewById(R.id.editTextTextMultiLine2);
         fromLangSpinner = findViewById(R.id.fromSpinner);
         toLangSpinner = findViewById(R.id.toSpinner);
-        speechToTextButton = findViewById(R.id.micButton);
+        speechToTextFromButton = findViewById(R.id.micFromButton);
+        speechToTextToButton = findViewById(R.id.micToButton);
         clearButton = findViewById(R.id.clearButton);
         copyButton = findViewById(R.id.copyButton);
         conversationModeCheckBox = findViewById(R.id.conversationModeCheckBox);
@@ -381,15 +382,51 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        //button to turn on mic system
-        speechToTextButton.setOnClickListener(new View.OnClickListener() {
+        //button to turn on mic system for From to To
+        speechToTextFromButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("TestLog", "Getting in");
+                Log.d("TestLog", "Getting in From");
+                micSwitch = 0;
+                //Variable to get the codes of all languages using LanguageCodeSeparation
+                List<String> languageCode = new ArrayList<>();
+                String languageChange = "";
+                for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                    languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                }
+
+                //Setting the Translator
+                int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                languageChange = languageCode.get(fls_SelectedPosition) + "-" + languageCode.get(fls_SelectedPosition).toUpperCase();
+
                 Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
                 recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageChange);
                 recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
-                //startActivity(recognizerIntent);
+                startSpeechToText.launch(recognizerIntent);
+            }
+        });
+        //button to turn on mic system To to From
+        speechToTextToButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d("TestLog", "Getting in To");
+                micSwitch = 1;
+                //Variable to get the codes of all languages using LanguageCodeSeparation
+                List<String> languageCode = new ArrayList<>();
+                String languageChange = "";
+                for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                    languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                }
+
+                //Setting the Translator
+                int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
+                languageChange = languageCode.get(tls_SelectedPosition) + "-" + languageCode.get(tls_SelectedPosition).toUpperCase();
+
+                Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageChange);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
                 startSpeechToText.launch(recognizerIntent);
             }
         });
@@ -398,6 +435,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 multilineTextFrom.getText().clear();
+                multilineTextTo.getText().clear();
             }
         });
         //button to copy the converted text to clipboard
@@ -429,61 +467,174 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onActivityResult(ActivityResult result) {
             Log.d("Speech", "Enters the Result");
-            if (result != null && result.getResultCode() == RESULT_OK) {
+            //A little check to ensure that user doesn't selected both spinner the same value
+            List<String> languageCodeTest = new ArrayList<>();
+            for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                languageCodeTest.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+            }
+            int fls_SelectedPositionTest = fromLangSpinner.getSelectedItemPosition();
+            int tls_SelectedPositionTest = toLangSpinner.getSelectedItemPosition();
+            if (result != null && result.getResultCode() == RESULT_OK && !Objects.equals(languageCodeTest.get(fls_SelectedPositionTest), languageCodeTest.get(tls_SelectedPositionTest))) {
                 if (result.getData() != null) {
                     Bundle bundle = result.getData().getExtras();
                     ArrayList<String> speechText = bundle.getStringArrayList(RecognizerIntent.EXTRA_RESULTS);
                     //Log.d("Speech", speechText.isEmpty());
                     String txt_in_editText = multilineTextFrom.getText().toString();
                     if(speechText != null && !speechText.isEmpty()) {
-                        if(!txt_in_editText.endsWith(" ")) {
-                            String txtSeq = txt_in_editText + " " + speechText.get(0).toString();
-                            multilineTextFrom.setText(txtSeq);
-                        } else if (txt_in_editText.endsWith(" ")) {
-                            String txtSeq = txt_in_editText + speechText.get(0).toString();
-                            multilineTextFrom.setText(txtSeq);
+//                        if(!txt_in_editText.endsWith(" ")) {
+//                            String txtSeq = txt_in_editText + " " + speechText.get(0).toString();
+//                            multilineTextFrom.setText(txtSeq);
+//                        } else if (txt_in_editText.endsWith(" ")) {
+//                            String txtSeq = txt_in_editText + speechText.get(0).toString();
+//                            multilineTextFrom.setText(txtSeq);
+//                        }
+                        if(micSwitch == 0) {
+                            multilineTextFrom.setText(speechText.get(0).toString());
+                        } else {
+                            multilineTextTo.setText(speechText.get(0).toString());
                         }
                         Log.d("Speech", "Does worked");
-                    } else {
-                        Log.d("Speech", "Doesn't worked");
-                    }
-                }
-            }
 
-            if(!downloadedLanguageNameAndCode.isEmpty()) {
-                //Variable to get the codes of all languages using LanguageCodeSeparation
-                List<String> languageCode = new ArrayList<>();
-                for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
-                    languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
-                }
+                        if(!downloadedLanguageNameAndCode.isEmpty() && !conversationModeCheckBox.isChecked()) {
+                            //Variable to get the codes of all languages using LanguageCodeSeparation
+                            List<String> languageCode = new ArrayList<>();
+                            for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                                languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                            }
 
-                //Setting the Translator
-                int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
-                int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
-                translatorOptions = new TranslatorOptions.Builder()
-                        .setSourceLanguage(languageCode.get(fls_SelectedPosition))
-                        .setTargetLanguage(languageCode.get(tls_SelectedPosition))
-                        .build();
-                translator = Translation.getClient(translatorOptions);
-                downloadConditions = new DownloadConditions.Builder()
-                        .requireWifi()
-                        .build();
+                            //Setting the Translator
+                            int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                            int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
+                            if(micSwitch == 0) {
+                                translatorOptions = new TranslatorOptions.Builder()
+                                        .setSourceLanguage(languageCode.get(fls_SelectedPosition))
+                                        .setTargetLanguage(languageCode.get(tls_SelectedPosition))
+                                        .build();
+                            } else if (micSwitch == 1) {
+                                translatorOptions = new TranslatorOptions.Builder()
+                                        .setSourceLanguage(languageCode.get(tls_SelectedPosition))
+                                        .setTargetLanguage(languageCode.get(fls_SelectedPosition))
+                                        .build();
+                            }
+                            translator = Translation.getClient(translatorOptions);
+                            downloadConditions = new DownloadConditions.Builder()
+                                    .requireWifi()
+                                    .build();
 
-                //To translate the text
-                translator.downloadModelIfNeeded(downloadConditions)
-                        .addOnSuccessListener(new OnSuccessListener<Void>() {
-                            @Override
-                            public void onSuccess(Void unused) {
-                                //Toast.makeText(this, "Download for languages are completed", Toast.LENGTH_SHORT).show();
-                                if (multilineTextFrom.getText().toString().isEmpty()) {
-                                    //no text
-                                    Toast.makeText(getBaseContext(), "Please Enter Text in From TextEdit", Toast.LENGTH_SHORT).show();
-                                } else {
-                                    translator.translate(String.valueOf(multilineTextFrom.getText()))
-                                            .addOnSuccessListener(new OnSuccessListener<String>() {
+                            //To translate the text
+                            translator.downloadModelIfNeeded(downloadConditions)
+                                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                        @Override
+                                        public void onSuccess(Void unused) {
+                                            String tempValue = "";//to store the input
+                                            if(micSwitch == 0) {
+                                                tempValue = String.valueOf(multilineTextFrom.getText());
+                                            } else {
+                                                tempValue = String.valueOf(multilineTextTo.getText());
+                                            }
+                                            //Toast.makeText(this, "Download for languages are completed", Toast.LENGTH_SHORT).show();
+                                            if (tempValue.isEmpty()) {
+                                                //no text
+                                                Toast.makeText(MainActivity.this, "Please Enter Text in From TextEdit", Toast.LENGTH_SHORT).show();
+                                            } else {
+                                                translator.translate(tempValue)
+                                                        .addOnSuccessListener(new OnSuccessListener<String>() {
+                                                            @Override
+                                                            public void onSuccess(String s) {
+                                                                if(micSwitch == 0) {
+                                                                    multilineTextTo.setText(s);
+                                                                } else {
+                                                                    multilineTextFrom.setText(s);
+                                                                }
+                                                            }
+                                                        })
+                                                        .addOnFailureListener(new OnFailureListener() {
+                                                            @Override
+                                                            public void onFailure(@NonNull Exception e) {
+
+                                                            }
+                                                        });
+                                            }
+                                        }
+                                    })
+                                    .addOnFailureListener(new OnFailureListener() {
+                                        @Override
+                                        public void onFailure(@NonNull Exception e) {
+
+                                        }
+                                    });
+                        } else if (!downloadedLanguageNameAndCode.isEmpty() && conversationModeCheckBox.isChecked()) {
+                            if(!conversationModeSwitchCheck && fromLanguage == null && toLanguage == null) {
+                                conversationModeSwitchCheck = true;
+
+                                //Variable to get the codes of all languages using LanguageCodeSeparation
+                                List<String> languageCode = new ArrayList<>();
+                                for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                                    languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                                }
+
+                                //Setting the Translator
+                                int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                                int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
+
+                                if(!Objects.equals(languageCode.get(fls_SelectedPosition), languageCode.get(tls_SelectedPosition))) {
+                                    fromLanguage = languageCode.get(fls_SelectedPosition);
+                                    toLanguage = languageCode.get(tls_SelectedPosition);
+
+                                    if(micSwitch == 0) {
+                                        translatorOptions = new TranslatorOptions.Builder()
+                                                .setSourceLanguage(languageCode.get(fls_SelectedPosition))
+                                                .setTargetLanguage(languageCode.get(tls_SelectedPosition))
+                                                .build();
+                                    } else if (micSwitch == 1) {
+                                        translatorOptions = new TranslatorOptions.Builder()
+                                                .setSourceLanguage(languageCode.get(tls_SelectedPosition))
+                                                .setTargetLanguage(languageCode.get(fls_SelectedPosition))
+                                                .build();
+                                    }
+                                    translator = Translation.getClient(translatorOptions);
+                                    downloadConditions = new DownloadConditions.Builder()
+                                            .requireWifi()
+                                            .build();
+
+                                    //To translate the text
+                                    translator.downloadModelIfNeeded(downloadConditions)
+                                            .addOnSuccessListener(new OnSuccessListener<Void>() {
                                                 @Override
-                                                public void onSuccess(String s) {
-                                                    multilineTextTo.setText(s);
+                                                public void onSuccess(Void unused) {
+                                                    String tempValue = "";//to store the input
+                                                    if(micSwitch == 0) {
+                                                        tempValue = String.valueOf(multilineTextFrom.getText());
+                                                    } else {
+                                                        tempValue = String.valueOf(multilineTextTo.getText());
+                                                    }
+                                                    //Toast.makeText(this, "Download for languages are completed", Toast.LENGTH_SHORT).show();
+                                                    if (tempValue.isEmpty()) {
+                                                        //no text
+                                                        Toast.makeText(MainActivity.this, "Please Enter Text in From TextEdit", Toast.LENGTH_SHORT).show();
+                                                    } else {
+                                                        translator.translate(tempValue)
+                                                                .addOnSuccessListener(new OnSuccessListener<String>() {
+                                                                    @Override
+                                                                    public void onSuccess(String s) {
+                                                                        if(micSwitch == 0) {
+                                                                            multilineTextTo.setText(s);
+                                                                        } else {
+                                                                            multilineTextFrom.setText(s);
+                                                                        }
+                                                                        //storing the language used to check the swap
+                                                                        firstTranslationFrom = String.valueOf(multilineTextFrom.getText());
+                                                                        firstTranslationTo = String.valueOf(multilineTextTo.getText());
+                                                                        Toast.makeText(MainActivity.this, "your conversation is finished", Toast.LENGTH_SHORT).show();
+                                                                    }
+                                                                })
+                                                                .addOnFailureListener(new OnFailureListener() {
+                                                                    @Override
+                                                                    public void onFailure(@NonNull Exception e) {
+
+                                                                    }
+                                                                });
+                                                    }
                                                 }
                                             })
                                             .addOnFailureListener(new OnFailureListener() {
@@ -492,15 +643,139 @@ public class MainActivity extends AppCompatActivity {
 
                                                 }
                                             });
+                                } else {
+                                    Toast.makeText(MainActivity.this, "Please select different language to translate", Toast.LENGTH_SHORT).show();
                                 }
-                            }
-                        })
-                        .addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
+                            } else if (conversationModeSwitchCheck && fromLanguage != null && toLanguage != null) {
+                                //Variable to get the codes of all languages using LanguageCodeSeparation
+                                List<String> languageCode = new ArrayList<>();
+                                for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                                    languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                                }
 
+                                //Setting the Translator
+                                int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                                int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
+
+                                conversationModeSwitchCheck = false;
+                                if(micSwitch == 0) {
+                                    translatorOptions = new TranslatorOptions.Builder()
+                                            .setSourceLanguage(languageCode.get(fls_SelectedPosition))
+                                            .setTargetLanguage(languageCode.get(tls_SelectedPosition))
+                                            .build();
+                                } else if (micSwitch == 1) {
+                                    translatorOptions = new TranslatorOptions.Builder()
+                                            .setSourceLanguage(languageCode.get(tls_SelectedPosition))
+                                            .setTargetLanguage(languageCode.get(fls_SelectedPosition))
+                                            .build();
+                                }
+                                translator = Translation.getClient(translatorOptions);
+                                downloadConditions = new DownloadConditions.Builder()
+                                        .requireWifi()
+                                        .build();
+
+                                //To translate the text
+                                translator.downloadModelIfNeeded(downloadConditions)
+                                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                            @Override
+                                            public void onSuccess(Void unused) {
+                                                String tempValue = "";//to store the input
+                                                if(micSwitch == 0) {
+                                                    tempValue = String.valueOf(multilineTextFrom.getText());
+                                                } else {
+                                                    tempValue = String.valueOf(multilineTextTo.getText());
+                                                }
+                                                //Toast.makeText(this, "Download for languages are completed", Toast.LENGTH_SHORT).show();
+                                                if (tempValue.isEmpty()) {
+                                                    //no text
+                                                    Toast.makeText(MainActivity.this, "Please Enter Text in From TextEdit", Toast.LENGTH_SHORT).show();
+                                                } else {
+                                                    translator.translate(tempValue)
+                                                            .addOnSuccessListener(new OnSuccessListener<String>() {
+                                                                @Override
+                                                                public void onSuccess(String s) {
+                                                                    if(micSwitch == 0) {
+                                                                        multilineTextTo.setText(s);
+                                                                    } else {
+                                                                        multilineTextFrom.setText(s);
+                                                                    }
+                                                                    //Shared Preference's Data added here
+                                                                    secondTranslationFrom = String.valueOf(multilineTextFrom.getText());
+                                                                    secondTranslationTo = String.valueOf(multilineTextTo.getText());
+                                                                    Set<String> sp_StringSet = new LinkedHashSet<String>();
+                                                                    sp_StringSet.add(fromLanguage);
+                                                                    sp_StringSet.add(toLanguage);
+                                                                    sp_StringSet.add(firstTranslationFrom);
+                                                                    sp_StringSet.add(firstTranslationTo);
+                                                                    sp_StringSet.add(secondTranslationFrom);
+                                                                    sp_StringSet.add(secondTranslationTo);
+                                                                    //adding the shared preference to the JSONArray so it won't be unordered
+                                                                    JSONArray jsonArray = new JSONArray(sp_StringSet);
+                                                                    Log.d("TestLog", sp_StringSet.toString());
+                                                                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                                                                    //Entry path will be checked here
+                                                                    Map<String, ?> checkPath = sharedPreferences.getAll();
+                                                                    if(checkPath.isEmpty()) {
+                                                                        Log.d("TestLog", "Enters on null sharedPref");
+                                                                        editor.putString(String.valueOf(keyIncrement), jsonArray.toString());
+                                                                        editor.apply();
+                                                                        keyIncrement++; //just in case
+                                                                    } else {
+                                                                        Log.d("TestLog", "Enters on not null sharedPref");
+                                                                        keyIncrement = 0;
+                                                                        //Getting every data with keys from shared preference
+                                                                        Map<String, ?> keyCollection = sharedPreferences.getAll();
+                                                                        for (Map.Entry<String, ?> keys : keyCollection.entrySet()){
+                                                                            JSONArray showDataTest;
+                                                                            try {
+                                                                                showDataTest = new JSONArray(sharedPreferences.getString(keys.getKey(), "[]"));
+                                                                            } catch (JSONException e) {
+                                                                                throw new RuntimeException(e);
+                                                                            }
+                                                                            //Checking weather it is ordered correctly
+                                                                            for (int i = 0; i < showDataTest.length(); i++) {
+                                                                                try {
+                                                                                    Log.d("TestLog", showDataTest.getString(i));
+                                                                                } catch (JSONException e) {
+                                                                                    throw new RuntimeException(e);
+                                                                                }
+                                                                            }
+                                                                            keyIncrement++;
+                                                                        }
+                                                                        Log.d("TestLog", String.valueOf(keyIncrement));
+                                                                        editor.putString(String.valueOf(keyIncrement), jsonArray.toString());
+                                                                        editor.apply();
+                                                                        keyIncrement++; //just in case
+                                                                    }
+                                                                    fromLanguage = null;
+                                                                    toLanguage = null;
+                                                                    Toast.makeText(MainActivity.this, "Finished the conversation, stored in conversation log", Toast.LENGTH_SHORT).show();
+                                                                }
+                                                            })
+                                                            .addOnFailureListener(new OnFailureListener() {
+                                                                @Override
+                                                                public void onFailure(@NonNull Exception e) {
+
+                                                                }
+                                                            });
+                                                }
+                                            }
+                                        })
+                                        .addOnFailureListener(new OnFailureListener() {
+                                            @Override
+                                            public void onFailure(@NonNull Exception e) {
+
+                                            }
+                                        });
                             }
-                        });
+                        }
+
+                    } else {
+                        Log.d("Speech", "Doesn't worked");
+                    }
+                }
+            } else if (Objects.equals(languageCodeTest.get(fls_SelectedPositionTest), languageCodeTest.get(tls_SelectedPositionTest))) {
+                Toast.makeText(MainActivity.this, "Please check the language you selected on both side", Toast.LENGTH_SHORT).show();
             }
         }
     });
