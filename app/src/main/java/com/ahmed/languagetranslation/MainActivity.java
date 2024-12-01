@@ -130,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
         convert_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!downloadedLanguageNameAndCode.isEmpty() && !conversationModeCheckBox.isChecked()) {
+                if(!downloadedLanguageNameAndCode.isEmpty() && !conversationModeCheckBox.isChecked() && !multilineTextFrom.getText().toString().isEmpty()) {
                     //Variable to get the codes of all languages using LanguageCodeSeparation
                     List<String> languageCode = new ArrayList<>();
                     for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
@@ -185,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         Toast.makeText(MainActivity.this, "Please select different language to translate", Toast.LENGTH_SHORT).show();
                     }
-                } else if (!downloadedLanguageNameAndCode.isEmpty() && conversationModeCheckBox.isChecked()) {
+                } else if (!downloadedLanguageNameAndCode.isEmpty() && conversationModeCheckBox.isChecked() && !multilineTextFrom.getText().toString().isEmpty()) {
                     if(!conversationModeSwitchCheck && fromLanguage == null && toLanguage == null) {
                         conversationModeSwitchCheck = true;
 
@@ -359,6 +359,8 @@ public class MainActivity extends AppCompatActivity {
                             Toast.makeText(MainActivity.this, "Please change the from language to, to language and to language to, from language", Toast.LENGTH_SHORT).show();
                         }
                     }
+                } else if (multilineTextFrom.getText().toString().isEmpty()) {
+                    Toast.makeText(MainActivity.this, "Please enter some text in the from", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -700,8 +702,9 @@ public class MainActivity extends AppCompatActivity {
                                                                         multilineTextFrom.setText(s);
                                                                     }
                                                                     //Shared Preference's Data added here
-                                                                    secondTranslationFrom = String.valueOf(multilineTextFrom.getText());
-                                                                    secondTranslationTo = String.valueOf(multilineTextTo.getText());
+                                                                    secondTranslationFrom = String.valueOf(multilineTextFrom.getText()) + "0";
+                                                                    secondTranslationTo = String.valueOf(multilineTextTo.getText()) + "0";
+
                                                                     Set<String> sp_StringSet = new LinkedHashSet<String>();
                                                                     sp_StringSet.add(fromLanguage);
                                                                     sp_StringSet.add(toLanguage);

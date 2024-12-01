@@ -40,8 +40,15 @@ public class LanguageRecyclerAdapter extends RecyclerView.Adapter<LanguageRecycl
         final int[] secondConversationSwitch = {0};
         String firstConversationFromText = listOfConversationObject.get(position).getFirstConversationFrom();
         String firstConversationToText = listOfConversationObject.get(position).getFirstConversationTo();
-        String secondConversationFromText = listOfConversationObject.get(position).getSecondConversationFrom();
-        String secondConversationToText = listOfConversationObject.get(position).getSecondConversationTo();
+        String secondConversationFromText = "";
+        String secondConversationToText = "";
+        if(listOfConversationObject.get(position).getSecondConversationFrom().endsWith("0") && listOfConversationObject.get(position).getSecondConversationTo().endsWith("0")) {
+            secondConversationFromText = listOfConversationObject.get(position).getSecondConversationFrom().substring(0, listOfConversationObject.get(position).getSecondConversationFrom().length() - 1);
+            secondConversationToText = listOfConversationObject.get(position).getSecondConversationTo().substring(0, listOfConversationObject.get(position).getSecondConversationTo().length() - 1);
+        } else {
+            secondConversationFromText = listOfConversationObject.get(position).getSecondConversationFrom();
+            secondConversationToText = listOfConversationObject.get(position).getSecondConversationTo();
+        }
 
         holder.firstMultiTextBox.setText(firstConversationFromText);
         holder.secondMultiTextBox.setText(secondConversationToText);
@@ -59,14 +66,16 @@ public class LanguageRecyclerAdapter extends RecyclerView.Adapter<LanguageRecycl
             }
         });
 
+        String finalSecondConversationFromText = secondConversationFromText;
+        String finalSecondConversationToText = secondConversationToText;
         holder.secondTranslateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(secondConversationSwitch[0] == 0) {
-                    holder.secondMultiTextBox.setText(secondConversationFromText);
+                    holder.secondMultiTextBox.setText(finalSecondConversationFromText);
                     secondConversationSwitch[0] = 1;
                 } else {
-                    holder.secondMultiTextBox.setText(secondConversationToText);
+                    holder.secondMultiTextBox.setText(finalSecondConversationToText);
                     secondConversationSwitch[0] = 0;
                 }
             }
