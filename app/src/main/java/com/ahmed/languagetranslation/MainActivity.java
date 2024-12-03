@@ -81,12 +81,13 @@ public class MainActivity extends AppCompatActivity {
 
     //Global variables
     int micSwitch = 0;
+    int micCheck = 0;
     boolean conversationModeSwitchCheck = false;
     //Global variables for Conversation mode
-    String firstTranslationFrom;
-    String firstTranslationTo;
-    String secondTranslationFrom;
-    String secondTranslationTo;
+    String firstTranslationFrom = "";
+    String firstTranslationTo = "";
+    String secondTranslationFrom = "";
+    String secondTranslationTo = "";
     String fromLanguage;
     String toLanguage;
     SharedPreferences sharedPreferences;
@@ -376,6 +377,7 @@ public class MainActivity extends AppCompatActivity {
                         conversationLogButton.setVisibility(View.VISIBLE);
                     } else if(!isCheckedMode && !conversationModeSwitchCheck){
                         Toast.makeText(MainActivity.this, "Conversation Mode Off", Toast.LENGTH_SHORT).show();
+                        micCheck = 0;
                         conversationLogButton.setVisibility(View.GONE);
                     } else if(!isCheckedMode && conversationModeSwitchCheck) {
                         conversationModeCheckBox.setChecked(true);
@@ -388,48 +390,141 @@ public class MainActivity extends AppCompatActivity {
         speechToTextFromButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("TestLog", "Getting in From");
-                micSwitch = 0;
-                //Variable to get the codes of all languages using LanguageCodeSeparation
-                List<String> languageCode = new ArrayList<>();
-                String languageChange = "";
-                for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
-                    languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                if(conversationModeCheckBox.isChecked() && micCheck == 0) {
+                    Log.d("TestLog", "Getting in From");
+                    micSwitch = 0;
+                    micCheck = 1;
+                    //Variable to get the codes of all languages using LanguageCodeSeparation
+                    List<String> languageCode = new ArrayList<>();
+                    String languageChange = "";
+                    for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                        languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                    }
+
+                    //Setting the Translator
+                    int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                    languageChange = languageCode.get(fls_SelectedPosition) + "-" + languageCode.get(fls_SelectedPosition).toUpperCase();
+
+                    Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageChange);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
+                    startSpeechToText.launch(recognizerIntent);
+                } else if(conversationModeCheckBox.isChecked() && micCheck == 1 && !Objects.equals(firstTranslationFrom, "") && !Objects.equals(firstTranslationTo, "")) {
+                    Log.d("TestLog", "Getting in To again");
+                    micSwitch = 0;
+                    conversationModeSwitchCheck = false;
+                    fromLanguage = null;
+                    toLanguage = null;
+                    firstTranslationTo = "";
+                    firstTranslationFrom = "";
+                    //Variable to get the codes of all languages using LanguageCodeSeparation
+                    List<String> languageCode = new ArrayList<>();
+                    String languageChange = "";
+                    for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                        languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                    }
+
+                    //Setting the Translator
+                    int tls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                    languageChange = languageCode.get(tls_SelectedPosition) + "-" + languageCode.get(tls_SelectedPosition).toUpperCase();
+
+                    Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageChange);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
+                    startSpeechToText.launch(recognizerIntent);
+                } else if(!conversationModeCheckBox.isChecked()) {
+                    Log.d("TestLog", "Getting in To");
+                    micSwitch = 0;
+                    //Variable to get the codes of all languages using LanguageCodeSeparation
+                    List<String> languageCode = new ArrayList<>();
+                    String languageChange = "";
+                    for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                        languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                    }
+
+                    //Setting the Translator
+                    int tls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                    languageChange = languageCode.get(tls_SelectedPosition) + "-" + languageCode.get(tls_SelectedPosition).toUpperCase();
+
+                    Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageChange);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
+                    startSpeechToText.launch(recognizerIntent);
+                } else {
+                    Toast.makeText(MainActivity.this, "Please let other talk", Toast.LENGTH_SHORT).show();
                 }
-
-                //Setting the Translator
-                int fls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
-                languageChange = languageCode.get(fls_SelectedPosition) + "-" + languageCode.get(fls_SelectedPosition).toUpperCase();
-
-                Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageChange);
-                recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
-                startSpeechToText.launch(recognizerIntent);
             }
         });
         //button to turn on mic system To to From
         speechToTextToButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("TestLog", "Getting in To");
-                micSwitch = 1;
-                //Variable to get the codes of all languages using LanguageCodeSeparation
-                List<String> languageCode = new ArrayList<>();
-                String languageChange = "";
-                for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
-                    languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                if(conversationModeCheckBox.isChecked() && micCheck == 1) {
+                    Log.d("TestLog", "Getting in To");
+                    micSwitch = 1;
+                    micCheck = 0;
+                    //Variable to get the codes of all languages using LanguageCodeSeparation
+                    List<String> languageCode = new ArrayList<>();
+                    String languageChange = "";
+                    for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                        languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                    }
+
+                    //Setting the Translator
+                    int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
+                    languageChange = languageCode.get(tls_SelectedPosition) + "-" + languageCode.get(tls_SelectedPosition).toUpperCase();
+
+                    Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageChange);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
+                    startSpeechToText.launch(recognizerIntent);
+                } else if(conversationModeCheckBox.isChecked() && micCheck == 1 && !Objects.equals(secondTranslationFrom, "") && !Objects.equals(secondTranslationTo, "")) {
+                    Log.d("TestLog", "Getting in To");
+                    micSwitch = 0;
+                    secondTranslationTo = "";
+                    secondTranslationFrom = "";
+                    //Variable to get the codes of all languages using LanguageCodeSeparation
+                    List<String> languageCode = new ArrayList<>();
+                    String languageChange = "";
+                    for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                        languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                    }
+
+                    //Setting the Translator
+                    int tls_SelectedPosition = fromLangSpinner.getSelectedItemPosition();
+                    languageChange = languageCode.get(tls_SelectedPosition) + "-" + languageCode.get(tls_SelectedPosition).toUpperCase();
+
+                    Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageChange);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
+                    startSpeechToText.launch(recognizerIntent);
+                } else if(!conversationModeCheckBox.isChecked()) {
+                    Log.d("TestLog", "Getting in To");
+                    micSwitch = 1;
+                    //Variable to get the codes of all languages using LanguageCodeSeparation
+                    List<String> languageCode = new ArrayList<>();
+                    String languageChange = "";
+                    for (int i = 0; i < downloadedLanguageNameAndCode.size(); i++) {
+                        languageCode.add(downloadedLanguageNameAndCode.get(i).getLanguageCode());
+                    }
+
+                    //Setting the Translator
+                    int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
+                    languageChange = languageCode.get(tls_SelectedPosition) + "-" + languageCode.get(tls_SelectedPosition).toUpperCase();
+
+                    Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageChange);
+                    recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
+                    startSpeechToText.launch(recognizerIntent);
+                } else {
+                    Toast.makeText(MainActivity.this, "Its your turn to talk", Toast.LENGTH_SHORT).show();
                 }
-
-                //Setting the Translator
-                int tls_SelectedPosition = toLangSpinner.getSelectedItemPosition();
-                languageChange = languageCode.get(tls_SelectedPosition) + "-" + languageCode.get(tls_SelectedPosition).toUpperCase();
-
-                Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageChange);
-                recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
-                startSpeechToText.launch(recognizerIntent);
             }
         });
         //button to clear text
@@ -567,6 +662,7 @@ public class MainActivity extends AppCompatActivity {
                                     });
                         } else if (!downloadedLanguageNameAndCode.isEmpty() && conversationModeCheckBox.isChecked()) {
                             if(!conversationModeSwitchCheck && fromLanguage == null && toLanguage == null) {
+                                Log.d("TestLog", "Enters the first part");
                                 conversationModeSwitchCheck = true;
 
                                 //Variable to get the codes of all languages using LanguageCodeSeparation
@@ -615,6 +711,7 @@ public class MainActivity extends AppCompatActivity {
                                                         //no text
                                                         Toast.makeText(MainActivity.this, "Please Enter Text in From TextEdit", Toast.LENGTH_SHORT).show();
                                                     } else {
+                                                        Log.d("TestLog", "gonna trasnlate");
                                                         translator.translate(tempValue)
                                                                 .addOnSuccessListener(new OnSuccessListener<String>() {
                                                                     @Override
@@ -627,6 +724,60 @@ public class MainActivity extends AppCompatActivity {
                                                                         //storing the language used to check the swap
                                                                         firstTranslationFrom = String.valueOf(multilineTextFrom.getText());
                                                                         firstTranslationTo = String.valueOf(multilineTextTo.getText());
+
+                                                                        if(!Objects.equals(firstTranslationFrom, "") && !Objects.equals(firstTranslationTo, "") && !Objects.equals(secondTranslationFrom, "") && !Objects.equals(secondTranslationTo, "")) {
+                                                                            Set<String> sp_StringSet = new LinkedHashSet<String>();
+                                                                            sp_StringSet.add(fromLanguage);
+                                                                            sp_StringSet.add(toLanguage);
+                                                                            sp_StringSet.add(firstTranslationFrom);
+                                                                            sp_StringSet.add(firstTranslationTo);
+                                                                            sp_StringSet.add(secondTranslationFrom);
+                                                                            sp_StringSet.add(secondTranslationTo);
+                                                                            //adding the shared preference to the JSONArray so it won't be unordered
+                                                                            JSONArray jsonArray = new JSONArray(sp_StringSet);
+                                                                            Log.d("TestLog", sp_StringSet.toString());
+                                                                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                                                                            //Entry path will be checked here
+                                                                            Map<String, ?> checkPath = sharedPreferences.getAll();
+                                                                            if (checkPath.isEmpty()) {
+                                                                                Log.d("TestLog", "Enters on null sharedPref");
+                                                                                editor.putString(String.valueOf(keyIncrement), jsonArray.toString());
+                                                                                editor.apply();
+                                                                                keyIncrement++; //just in case
+                                                                            } else {
+                                                                                Log.d("TestLog", "Enters on not null sharedPref");
+                                                                                keyIncrement = 0;
+                                                                                //Getting every data with keys from shared preference
+                                                                                Map<String, ?> keyCollection = sharedPreferences.getAll();
+                                                                                for (Map.Entry<String, ?> keys : keyCollection.entrySet()) {
+                                                                                    JSONArray showDataTest;
+                                                                                    try {
+                                                                                        showDataTest = new JSONArray(sharedPreferences.getString(keys.getKey(), "[]"));
+                                                                                    } catch (
+                                                                                            JSONException e) {
+                                                                                        throw new RuntimeException(e);
+                                                                                    }
+                                                                                    //Checking weather it is ordered correctly
+                                                                                    for (int i = 0; i < showDataTest.length(); i++) {
+                                                                                        try {
+                                                                                            Log.d("TestLog", showDataTest.getString(i));
+                                                                                        } catch (
+                                                                                                JSONException e) {
+                                                                                            throw new RuntimeException(e);
+                                                                                        }
+                                                                                    }
+                                                                                    keyIncrement++;
+                                                                                }
+                                                                                Log.d("TestLog", String.valueOf(keyIncrement));
+                                                                                editor.putString(String.valueOf(keyIncrement), jsonArray.toString());
+                                                                                editor.apply();
+                                                                                keyIncrement++; //just in case
+                                                                            }
+                                                                            fromLanguage = null;
+                                                                            toLanguage = null;
+                                                                            Toast.makeText(MainActivity.this, "Finished the conversation, stored in conversation log", Toast.LENGTH_SHORT).show();
+                                                                        }
+
                                                                         Toast.makeText(MainActivity.this, "your conversation is finished", Toast.LENGTH_SHORT).show();
                                                                     }
                                                                 })
@@ -705,54 +856,62 @@ public class MainActivity extends AppCompatActivity {
                                                                     secondTranslationFrom = String.valueOf(multilineTextFrom.getText()) + "0";
                                                                     secondTranslationTo = String.valueOf(multilineTextTo.getText()) + "0";
 
-                                                                    Set<String> sp_StringSet = new LinkedHashSet<String>();
-                                                                    sp_StringSet.add(fromLanguage);
-                                                                    sp_StringSet.add(toLanguage);
-                                                                    sp_StringSet.add(firstTranslationFrom);
-                                                                    sp_StringSet.add(firstTranslationTo);
-                                                                    sp_StringSet.add(secondTranslationFrom);
-                                                                    sp_StringSet.add(secondTranslationTo);
-                                                                    //adding the shared preference to the JSONArray so it won't be unordered
-                                                                    JSONArray jsonArray = new JSONArray(sp_StringSet);
-                                                                    Log.d("TestLog", sp_StringSet.toString());
-                                                                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                                                                    //Entry path will be checked here
-                                                                    Map<String, ?> checkPath = sharedPreferences.getAll();
-                                                                    if(checkPath.isEmpty()) {
-                                                                        Log.d("TestLog", "Enters on null sharedPref");
-                                                                        editor.putString(String.valueOf(keyIncrement), jsonArray.toString());
-                                                                        editor.apply();
-                                                                        keyIncrement++; //just in case
-                                                                    } else {
-                                                                        Log.d("TestLog", "Enters on not null sharedPref");
-                                                                        keyIncrement = 0;
-                                                                        //Getting every data with keys from shared preference
-                                                                        Map<String, ?> keyCollection = sharedPreferences.getAll();
-                                                                        for (Map.Entry<String, ?> keys : keyCollection.entrySet()){
-                                                                            JSONArray showDataTest;
-                                                                            try {
-                                                                                showDataTest = new JSONArray(sharedPreferences.getString(keys.getKey(), "[]"));
-                                                                            } catch (JSONException e) {
-                                                                                throw new RuntimeException(e);
-                                                                            }
-                                                                            //Checking weather it is ordered correctly
-                                                                            for (int i = 0; i < showDataTest.length(); i++) {
+                                                                    if(!Objects.equals(firstTranslationFrom, "") && !Objects.equals(firstTranslationTo, "") && !Objects.equals(secondTranslationFrom, "") && !Objects.equals(secondTranslationTo, "")) {
+                                                                        Set<String> sp_StringSet = new LinkedHashSet<String>();
+                                                                        sp_StringSet.add(fromLanguage);
+                                                                        sp_StringSet.add(toLanguage);
+                                                                        sp_StringSet.add(firstTranslationFrom);
+                                                                        sp_StringSet.add(firstTranslationTo);
+                                                                        sp_StringSet.add(secondTranslationFrom);
+                                                                        sp_StringSet.add(secondTranslationTo);
+                                                                        //adding the shared preference to the JSONArray so it won't be unordered
+                                                                        JSONArray jsonArray = new JSONArray(sp_StringSet);
+                                                                        Log.d("TestLog", sp_StringSet.toString());
+                                                                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                                                                        //Entry path will be checked here
+                                                                        Map<String, ?> checkPath = sharedPreferences.getAll();
+                                                                        if (checkPath.isEmpty()) {
+                                                                            Log.d("TestLog", "Enters on null sharedPref");
+                                                                            editor.putString(String.valueOf(keyIncrement), jsonArray.toString());
+                                                                            editor.apply();
+                                                                            keyIncrement++; //just in case
+                                                                        } else {
+                                                                            Log.d("TestLog", "Enters on not null sharedPref");
+                                                                            keyIncrement = 0;
+                                                                            //Getting every data with keys from shared preference
+                                                                            Map<String, ?> keyCollection = sharedPreferences.getAll();
+                                                                            for (Map.Entry<String, ?> keys : keyCollection.entrySet()) {
+                                                                                JSONArray showDataTest;
                                                                                 try {
-                                                                                    Log.d("TestLog", showDataTest.getString(i));
-                                                                                } catch (JSONException e) {
+                                                                                    showDataTest = new JSONArray(sharedPreferences.getString(keys.getKey(), "[]"));
+                                                                                } catch (
+                                                                                        JSONException e) {
                                                                                     throw new RuntimeException(e);
                                                                                 }
+                                                                                //Checking weather it is ordered correctly
+                                                                                for (int i = 0; i < showDataTest.length(); i++) {
+                                                                                    try {
+                                                                                        Log.d("TestLog", showDataTest.getString(i));
+                                                                                    } catch (
+                                                                                            JSONException e) {
+                                                                                        throw new RuntimeException(e);
+                                                                                    }
+                                                                                }
+                                                                                keyIncrement++;
                                                                             }
-                                                                            keyIncrement++;
+                                                                            Log.d("TestLog", String.valueOf(keyIncrement));
+                                                                            editor.putString(String.valueOf(keyIncrement), jsonArray.toString());
+                                                                            editor.apply();
+                                                                            keyIncrement++; //just in case
                                                                         }
-                                                                        Log.d("TestLog", String.valueOf(keyIncrement));
-                                                                        editor.putString(String.valueOf(keyIncrement), jsonArray.toString());
-                                                                        editor.apply();
-                                                                        keyIncrement++; //just in case
+                                                                        fromLanguage = null;
+                                                                        toLanguage = null;
+                                                                        secondTranslationFrom = "";
+                                                                        secondTranslationTo = "";
+                                                                        firstTranslationTo = "";
+                                                                        firstTranslationFrom = "";
+                                                                        Toast.makeText(MainActivity.this, "Finished the conversation, stored in conversation log", Toast.LENGTH_SHORT).show();
                                                                     }
-                                                                    fromLanguage = null;
-                                                                    toLanguage = null;
-                                                                    Toast.makeText(MainActivity.this, "Finished the conversation, stored in conversation log", Toast.LENGTH_SHORT).show();
                                                                 }
                                                             })
                                                             .addOnFailureListener(new OnFailureListener() {
